@@ -11,4 +11,9 @@ export class LinksController {
   process(@Body('url') url: string) {
     return this.linksService.processLink(url);
   }
+
+  @Post('parse-search')
+  parseSearch(@Body('query') query: string) {
+    return this.linksService.parseSearchQuery(query);
+  }
 }

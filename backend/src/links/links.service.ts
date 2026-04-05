@@ -159,6 +159,38 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
     }
   }
 
+  async parseSearchQuery(query: string) {
+    if (!this.ai) return { searchTerm: query };
+
+    const str = { type: SchemaType.STRING };
+    const num = { type: SchemaType.NUMBER };
+    const strArr = { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } };
+
+    const schema = {
+      type: SchemaType.OBJECT,
+      properties: {
+        cardTypes: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING, enum: CARD_TYPES } },
+        intents: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING, enum: INTENTS } },
+        tags: strArr,
+        searchTerm: str,
+        dateRange: { type: SchemaType.OBJECT, properties: { start: str, end: str } },
+        priceRange: { type: SchemaType.OBJECT, properties: { min: num, max: num } },
+        rating: { type: SchemaType.OBJECT, properties: { min: num } },
+      },
+    };
+
+    const model = this.ai.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      generationConfig: { responseMimeType: 'application/json', responseSchema: schema as any },
+    });
+
+    const result = await model.generateContent(
+      `Parse this search query into structured filters for a link-saving app. Today's date: ${new Date().toISOString().split('T')[0]}. Query: "${query}"`,
+    );
+
+    return JSON.parse(result.response.text() || '{}');
+  }
+
   private buildSchema() {
     const str = { type: SchemaType.STRING };
     const num = { type: SchemaType.NUMBER };

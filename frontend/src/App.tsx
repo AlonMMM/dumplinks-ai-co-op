@@ -2,8 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Header } from './components/Header';
 import { LinkInputForm } from './components/LinkInputForm';
 import { CardGrid } from './components/CardGrid';
-import { processSearchQuery } from './services/geminiService';
-import { processLink } from './services/dataService';
+import { processLink, parseSearchQuery } from './services/dataService';
 import type { CardData, SearchFilters, CardType, User, GroupByOption } from './types';
 import { CardModal } from './components/CardModal';
 import { MOCK_CARDS } from './constants';
@@ -230,7 +229,7 @@ const App: React.FC = () => {
     setActiveCardType(null);
     setShowFavoritesOnly(false);
     try {
-      const filters = await processSearchQuery(query);
+      const filters = await parseSearchQuery(query);
       setSmartFilters(filters);
     } catch {
       setError("Sorry, I couldn't process that search.");
