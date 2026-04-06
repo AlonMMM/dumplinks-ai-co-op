@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: dumplinks-backend
+    name: dumplinks-ai-co-op
     runtime: node
     rootDir: backend
     buildCommand: npm install --no-audit --no-fund && npm run build
