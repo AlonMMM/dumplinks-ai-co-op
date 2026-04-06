@@ -17,6 +17,8 @@ services:
         sync: false  # set in Render dashboard
       - key: FRONTEND_URL
         sync: false  # set in Render dashboard — your frontend's Render URL
+      - key: GEMINI_API_KEY
+        sync: false  # set in Render dashboard
 
   - type: web
     name: dumplinks-frontend

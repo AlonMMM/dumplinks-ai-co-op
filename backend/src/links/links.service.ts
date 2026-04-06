@@ -64,17 +64,25 @@ export class LinksService {
       throw new BadRequestException('Invalid URL');
     }
 
-    const metadata = await this.fetchMetadata(url);
     const hostname = parsedUrl.hostname.replace('www.', '');
+    const isYouTube = /youtube\.com|youtu\.be/.test(parsedUrl.hostname);
+
+    const [metadata, oembed] = await Promise.all([
+      this.fetchMetadata(url),
+      isYouTube ? this.fetchYouTubeOEmbed(url) : Promise.resolve(null),
+    ]);
+
+    const resolvedTitle = oembed?.title || metadata?.title || null;
+    const resolvedImage = oembed?.image || metadata?.image || null;
 
     if (!this.apiKey) {
       return {
         url,
         cardType: 'OTHER',
         intent: 'REFERENCE',
-        title: metadata?.title || hostname,
+        title: resolvedTitle || hostname,
         description: metadata?.description || '',
-        imageUrl: metadata?.image || '',
+        imageUrl: resolvedImage || '',
         additionalImages: metadata?.additionalImages || [],
         source: metadata?.siteName || hostname,
         tags: [hostname.split('.')[0]],
@@ -83,7 +91,7 @@ export class LinksService {
 
     const prompt = `Analyze this URL and page content. Return a JSON object.
 URL: ${url}
-Page Title: ${metadata?.title || 'N/A'}
+Page Title: ${resolvedTitle || 'N/A'}
 Page Description: ${metadata?.description || 'N/A'}
 Site Name: ${metadata?.siteName || hostname}
 Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
@@ -96,9 +104,9 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
       url,
       cardType: (p['cardType'] as string) || 'OTHER',
       intent: (p['intent'] as string) || 'REFERENCE',
-      title: metadata?.title || (p['title'] as string) || hostname,
-      description: (p['description'] as string) || metadata?.description || '',
-      imageUrl: metadata?.image || '',
+      title: resolvedTitle || (p['title'] as string) || hostname,
+      description: (() => { const d = (p['description'] as string) || metadata?.description || ''; return /no description available/i.test(d) ? (metadata?.description || '') : d; })(),
+      imageUrl: resolvedImage || '',
       additionalImages: metadata?.additionalImages || [],
       source: (p['source'] as string) || metadata?.siteName || hostname,
       tags: (p['tags'] as string[]) || [],
@@ -114,6 +122,19 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
       financeDetails: p['financeDetails'],
     };
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+  }
+
+  private async fetchYouTubeOEmbed(url: string): Promise<{ title: string; image: string } | null> {
+    try {
+      const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) return null;
+      const data = await res.json() as { title?: string; thumbnail_url?: string };
+      return { title: data.title || '', image: data.thumbnail_url || '' };
+    } catch {
+      return null;
+    }
   }
 
   private async fetchMetadata(url: string) {
@@ -245,6 +266,7 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
     return {
       type: 'OBJECT',
       properties: {
+        title: { type: 'STRING' },
         description: { type: 'STRING' },
         cardType: { type: 'STRING', enum: CARD_TYPES },
         intent: { type: 'STRING', enum: INTENTS },
@@ -331,7 +353,7 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
           },
         },
       },
-      required: ['description', 'cardType', 'intent', 'tags', 'source'],
+      required: ['title', 'description', 'cardType', 'intent', 'tags', 'source'],
     };
   }
 }
