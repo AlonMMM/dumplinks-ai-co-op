@@ -3,7 +3,7 @@ services:
     name: dumplinks-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install --include=dev --no-audit --no-fund && npm run build
+    buildCommand: npm install --no-audit --no-fund && npm run build
     startCommand: node dist/main
     nodeVersion: 20
     envVars:
