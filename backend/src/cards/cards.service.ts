@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Card, CardDocument } from './schemas/card.schema';
@@ -9,16 +13,27 @@ export class CardsService {
 
   private toResponse(card: CardDocument) {
     const obj = card.toObject();
-    return { ...obj, id: obj._id.toString(), _id: undefined, userId: undefined, __v: undefined };
+    return {
+      ...obj,
+      id: obj._id.toString(),
+      _id: undefined,
+      userId: undefined,
+      __v: undefined,
+    };
   }
 
   async findAll(userId: string) {
-    const cards = await this.cardModel.find({ userId: new Types.ObjectId(userId) }).sort({ createdAt: -1 });
+    const cards = await this.cardModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .sort({ createdAt: -1 });
     return cards.map((c) => this.toResponse(c));
   }
 
   async create(userId: string, data: Omit<Card, 'userId'>) {
-    const card = await this.cardModel.create({ ...data, userId: new Types.ObjectId(userId) });
+    const card = await this.cardModel.create({
+      ...data,
+      userId: new Types.ObjectId(userId),
+    });
     return this.toResponse(card);
   }
 
@@ -27,7 +42,9 @@ export class CardsService {
     if (!card) throw new NotFoundException('Card not found');
     if (card.userId.toString() !== userId) throw new ForbiddenException();
 
-    const updated = await this.cardModel.findByIdAndUpdate(cardId, data, { new: true });
+    const updated = await this.cardModel.findByIdAndUpdate(cardId, data, {
+      new: true,
+    });
     return this.toResponse(updated!);
   }
 

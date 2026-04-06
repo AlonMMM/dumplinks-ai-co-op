@@ -2,8 +2,32 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 
-const CARD_TYPES = ['SHOPPING', 'RECIPE', 'READ_LATER', 'VIDEO', 'TRAVEL', 'RESTAURANT', 'HEALTH_FITNESS', 'EDUCATION', 'DIY_CRAFTS', 'PARENTING', 'FINANCE', 'OTHER'];
-const INTENTS = ['TO_BUY', 'TO_READ', 'TO_WATCH', 'TO_VISIT', 'TO_COOK', 'TO_EAT', 'TO_LEARN', 'TO_DO', 'INSPIRATION', 'REFERENCE'];
+const CARD_TYPES = [
+  'SHOPPING',
+  'RECIPE',
+  'READ_LATER',
+  'VIDEO',
+  'TRAVEL',
+  'RESTAURANT',
+  'HEALTH_FITNESS',
+  'EDUCATION',
+  'DIY_CRAFTS',
+  'PARENTING',
+  'FINANCE',
+  'OTHER',
+];
+const INTENTS = [
+  'TO_BUY',
+  'TO_READ',
+  'TO_WATCH',
+  'TO_VISIT',
+  'TO_COOK',
+  'TO_EAT',
+  'TO_LEARN',
+  'TO_DO',
+  'INSPIRATION',
+  'REFERENCE',
+];
 
 @Injectable()
 export class LinksService {
@@ -43,6 +67,7 @@ export class LinksService {
       model: 'gemini-2.0-flash',
       generationConfig: {
         responseMimeType: 'application/json',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         responseSchema: this.buildSchema() as any,
       },
     });
@@ -55,29 +80,34 @@ Site Name: ${metadata?.siteName || hostname}
 Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
 
     const result = await model.generateContent(prompt);
-    const parsed = JSON.parse(result.response.text() || '{}');
 
+    // Gemini returns untyped JSON — safe to disable here
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const p: Record<string, any> = JSON.parse(result.response.text() || '{}');
+
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     return {
       url,
-      cardType: parsed.cardType || 'OTHER',
-      intent: parsed.intent || 'REFERENCE',
-      title: metadata?.title || parsed.title || hostname,
-      description: parsed.description || metadata?.description || '',
+      cardType: (p['cardType'] as string) || 'OTHER',
+      intent: (p['intent'] as string) || 'REFERENCE',
+      title: metadata?.title || (p['title'] as string) || hostname,
+      description: (p['description'] as string) || metadata?.description || '',
       imageUrl: metadata?.image || '',
       additionalImages: metadata?.additionalImages || [],
-      source: parsed.source || metadata?.siteName || hostname,
-      tags: parsed.tags || [],
-      shoppingDetails: parsed.shoppingDetails || undefined,
-      recipeDetails: parsed.recipeDetails || undefined,
-      readLaterDetails: parsed.readLaterDetails || undefined,
-      travelDetails: parsed.travelDetails || undefined,
-      restaurantDetails: parsed.restaurantDetails || undefined,
-      healthFitnessDetails: parsed.healthFitnessDetails || undefined,
-      educationDetails: parsed.educationDetails || undefined,
-      diyCraftsDetails: parsed.diyCraftsDetails || undefined,
-      parentingDetails: parsed.parentingDetails || undefined,
-      financeDetails: parsed.financeDetails || undefined,
+      source: (p['source'] as string) || metadata?.siteName || hostname,
+      tags: (p['tags'] as string[]) || [],
+      shoppingDetails: p['shoppingDetails'],
+      recipeDetails: p['recipeDetails'],
+      readLaterDetails: p['readLaterDetails'],
+      travelDetails: p['travelDetails'],
+      restaurantDetails: p['restaurantDetails'],
+      healthFitnessDetails: p['healthFitnessDetails'],
+      educationDetails: p['educationDetails'],
+      diyCraftsDetails: p['diyCraftsDetails'],
+      parentingDetails: p['parentingDetails'],
+      financeDetails: p['financeDetails'],
     };
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
   }
 
   private async fetchMetadata(url: string) {
@@ -93,7 +123,11 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
       const getMeta = (patterns: RegExp[]) => {
         for (const re of patterns) {
           const m = html.match(re);
-          if (m?.[1]) return m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"').trim();
+          if (m?.[1])
+            return m[1]
+              .replace(/&amp;/g, '&')
+              .replace(/&quot;/g, '"')
+              .trim();
         }
         return null;
       };
@@ -128,21 +162,34 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
 
       let image: string | null = null;
       if (rawImage) {
-        try { image = new URL(rawImage, url).href; } catch { /* ignore */ }
+        try {
+          image = new URL(rawImage, url).href;
+        } catch {
+          /* ignore */
+        }
       }
 
       const additionalImages: string[] = [];
       const seenImages = new Set<string>(image ? [image] : []);
       const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
       let imgMatch: RegExpExecArray | null;
-      while ((imgMatch = imgRegex.exec(html)) !== null && additionalImages.length < 5) {
+      while (
+        (imgMatch = imgRegex.exec(html)) !== null &&
+        additionalImages.length < 5
+      ) {
         try {
           const src = new URL(imgMatch[1], url).href;
-          if (!seenImages.has(src) && !src.endsWith('.svg') && !/logo|icon|pixel/i.test(src)) {
+          if (
+            !seenImages.has(src) &&
+            !src.endsWith('.svg') &&
+            !/logo|icon|pixel/i.test(src)
+          ) {
             additionalImages.push(src);
             seenImages.add(src);
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
 
       const rawText = html
@@ -164,30 +211,50 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
 
     const str = { type: SchemaType.STRING };
     const num = { type: SchemaType.NUMBER };
-    const strArr = { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } };
+    const strArr = {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    };
 
     const schema = {
       type: SchemaType.OBJECT,
       properties: {
-        cardTypes: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING, enum: CARD_TYPES } },
-        intents: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING, enum: INTENTS } },
+        cardTypes: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING, enum: CARD_TYPES },
+        },
+        intents: {
+          type: SchemaType.ARRAY,
+          items: { type: SchemaType.STRING, enum: INTENTS },
+        },
         tags: strArr,
         searchTerm: str,
-        dateRange: { type: SchemaType.OBJECT, properties: { start: str, end: str } },
-        priceRange: { type: SchemaType.OBJECT, properties: { min: num, max: num } },
+        dateRange: {
+          type: SchemaType.OBJECT,
+          properties: { start: str, end: str },
+        },
+        priceRange: {
+          type: SchemaType.OBJECT,
+          properties: { min: num, max: num },
+        },
         rating: { type: SchemaType.OBJECT, properties: { min: num } },
       },
     };
 
     const model = this.ai.getGenerativeModel({
       model: 'gemini-2.0-flash',
-      generationConfig: { responseMimeType: 'application/json', responseSchema: schema as any },
+      generationConfig: {
+        responseMimeType: 'application/json',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        responseSchema: schema as any,
+      },
     });
 
     const result = await model.generateContent(
       `Parse this search query into structured filters for a link-saving app. Today's date: ${new Date().toISOString().split('T')[0]}. Query: "${query}"`,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return JSON.parse(result.response.text() || '{}');
   }
 
@@ -195,7 +262,10 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
     const str = { type: SchemaType.STRING };
     const num = { type: SchemaType.NUMBER };
     const bool = { type: SchemaType.BOOLEAN };
-    const strArr = { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } };
+    const strArr = {
+      type: SchemaType.ARRAY,
+      items: { type: SchemaType.STRING },
+    };
 
     return {
       type: SchemaType.OBJECT,
@@ -205,16 +275,111 @@ Page Text Excerpt: ${metadata?.rawText?.substring(0, 3000) || 'N/A'}`;
         intent: { type: SchemaType.STRING, enum: INTENTS },
         tags: strArr,
         source: str,
-        shoppingDetails: { type: SchemaType.OBJECT, nullable: true, properties: { price: str, rating: num, reviewsCount: num, topPositiveReview: str, topNegativeReview: str } },
-        recipeDetails: { type: SchemaType.OBJECT, nullable: true, properties: { ingredients: strArr, instructions: strArr, prepTime: str, cookTime: str, totalTime: str, servings: str, difficulty: str, calories: str } },
-        readLaterDetails: { type: SchemaType.OBJECT, nullable: true, properties: { author: str, readTime: str, subject: str } },
-        travelDetails: { type: SchemaType.OBJECT, nullable: true, properties: { address: str, googleMapsUrl: str, category: str, rating: num, phoneNumber: str, ticketPrice: str, openingHours: strArr } },
-        restaurantDetails: { type: SchemaType.OBJECT, nullable: true, properties: { address: str, googleMapsUrl: str, category: str, rating: num, phoneNumber: str, reservationLink: str, priceLevel: str, cuisine: strArr, openingHours: strArr } },
-        healthFitnessDetails: { type: SchemaType.OBJECT, nullable: true, properties: { activityType: str, duration: str, difficulty: str, caloriesBurned: str, equipmentNeeded: strArr } },
-        educationDetails: { type: SchemaType.OBJECT, nullable: true, properties: { topic: str, level: str, provider: str, duration: str, certification: bool } },
-        diyCraftsDetails: { type: SchemaType.OBJECT, nullable: true, properties: { projectType: str, materials: strArr, estimatedTime: str, difficulty: str } },
-        parentingDetails: { type: SchemaType.OBJECT, nullable: true, properties: { activityType: str, ageGroup: str, itemsNeeded: strArr } },
-        financeDetails: { type: SchemaType.OBJECT, nullable: true, properties: { category: str, promoCode: str, expiryDate: str, savings: str } },
+        shoppingDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: {
+            price: str,
+            rating: num,
+            reviewsCount: num,
+            topPositiveReview: str,
+            topNegativeReview: str,
+          },
+        },
+        recipeDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: {
+            ingredients: strArr,
+            instructions: strArr,
+            prepTime: str,
+            cookTime: str,
+            totalTime: str,
+            servings: str,
+            difficulty: str,
+            calories: str,
+          },
+        },
+        readLaterDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: { author: str, readTime: str, subject: str },
+        },
+        travelDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: {
+            address: str,
+            googleMapsUrl: str,
+            category: str,
+            rating: num,
+            phoneNumber: str,
+            ticketPrice: str,
+            openingHours: strArr,
+          },
+        },
+        restaurantDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: {
+            address: str,
+            googleMapsUrl: str,
+            category: str,
+            rating: num,
+            phoneNumber: str,
+            reservationLink: str,
+            priceLevel: str,
+            cuisine: strArr,
+            openingHours: strArr,
+          },
+        },
+        healthFitnessDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: {
+            activityType: str,
+            duration: str,
+            difficulty: str,
+            caloriesBurned: str,
+            equipmentNeeded: strArr,
+          },
+        },
+        educationDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: {
+            topic: str,
+            level: str,
+            provider: str,
+            duration: str,
+            certification: bool,
+          },
+        },
+        diyCraftsDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: {
+            projectType: str,
+            materials: strArr,
+            estimatedTime: str,
+            difficulty: str,
+          },
+        },
+        parentingDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: { activityType: str, ageGroup: str, itemsNeeded: strArr },
+        },
+        financeDetails: {
+          type: SchemaType.OBJECT,
+          nullable: true,
+          properties: {
+            category: str,
+            promoCode: str,
+            expiryDate: str,
+            savings: str,
+          },
+        },
       },
       required: ['description', 'cardType', 'intent', 'tags', 'source'],
     };

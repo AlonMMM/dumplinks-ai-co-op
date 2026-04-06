@@ -1,4 +1,9 @@
-import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { UsersService } from '../users/users.service';
@@ -14,7 +19,10 @@ export class AuthService {
   ) {}
 
   private issueToken(user: UserDocument) {
-    return this.jwtService.sign({ sub: user._id.toString(), email: user.email });
+    return this.jwtService.sign({
+      sub: user._id.toString(),
+      email: user.email,
+    });
   }
 
   private toProfile(user: UserDocument) {
@@ -42,7 +50,8 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.usersService.findByEmail(dto.email);
-    if (!user?.passwordHash) throw new UnauthorizedException('Invalid credentials');
+    if (!user?.passwordHash)
+      throw new UnauthorizedException('Invalid credentials');
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
@@ -51,18 +60,26 @@ export class AuthService {
   }
 
   async googleLogin(accessToken: string) {
-    let payload: { sub?: string; id?: string; email?: string; name?: string; picture?: string };
+    let payload: {
+      sub?: string;
+      id?: string;
+      email?: string;
+      name?: string;
+      picture?: string;
+    };
     try {
       const res = await fetch(
         `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`,
       );
       if (!res.ok) throw new Error('Failed to fetch user info');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       payload = await res.json();
     } catch {
       throw new BadRequestException('Invalid Google access token');
     }
 
-    if (!payload.email) throw new BadRequestException('Google account has no email');
+    if (!payload.email)
+      throw new BadRequestException('Google account has no email');
 
     let user = await this.usersService.findByEmail(payload.email);
     const googleId = payload.id ?? payload.sub;
@@ -86,7 +103,10 @@ export class AuthService {
     return this.toProfile(user);
   }
 
-  async updateMe(userId: string, data: { name?: string; profilePictureUrl?: string }) {
+  async updateMe(
+    userId: string,
+    data: { name?: string; profilePictureUrl?: string },
+  ) {
     const user = await this.usersService.update(userId, data);
     if (!user) throw new UnauthorizedException();
     return this.toProfile(user);

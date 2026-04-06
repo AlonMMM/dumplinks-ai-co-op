@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CardsService } from './cards.service';
 import { Card } from './schemas/card.schema';
@@ -23,7 +34,11 @@ export class CardsController {
   }
 
   @Put(':id')
-  update(@Request() req: AuthRequest, @Param('id') id: string, @Body() body: Partial<Card>) {
+  update(
+    @Request() req: AuthRequest,
+    @Param('id') id: string,
+    @Body() body: Partial<Card>,
+  ) {
     return this.cardsService.update(req.user._id.toString(), id, body);
   }
 
