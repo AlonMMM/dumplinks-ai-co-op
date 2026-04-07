@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { CardData, ShoppingDetails, RecipeDetails, TravelDetails, RestaurantDetails, ReadLaterDetails, HealthFitnessDetails, EducationDetails, DiyCraftsDetails, ParentingDetails, FinanceDetails } from '../types';
 import { CardType } from '../types';
 import { Tag } from './common/Tag';
@@ -303,6 +303,8 @@ export const CardModal: React.FC<CardModalProps> = ({ card, onClose, onUpdate, o
   const [isEditing, setIsEditing] = useState(false);
   const [editableCard, setEditableCard] = useState<CardData>({ ...card });
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const gallery = [editableCard.imageUrl, ...(Array.isArray(editableCard.additionalImages) ? editableCard.additionalImages : [])].filter(Boolean);
   const hasMultipleImages = gallery.length > 1;
@@ -312,6 +314,16 @@ export const CardModal: React.FC<CardModalProps> = ({ card, onClose, onUpdate, o
     setIsEditing(false);
     setCurrentImageIndex(0);
   }, [card]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const IconComponent = CardTypeIconMap[editableCard.cardType] || OtherIcon;
 
@@ -486,31 +498,66 @@ export const CardModal: React.FC<CardModalProps> = ({ card, onClose, onUpdate, o
         <div className="flex-1 overflow-y-auto relative p-6 md:p-8" style={{ scrollbarWidth: 'none' }}>
 
           {/* Absolute controls */}
-          {isEditing ? (
-            <div className="absolute top-6 right-6 z-50 flex items-center gap-2">
-              <button onClick={handleDelete} className="bg-white/80 backdrop-blur border border-zinc-200 rounded-full p-2 text-red-500 hover:bg-red-50 transition-colors shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              </button>
-              <button onClick={() => setIsEditing(false)} className="bg-white/80 backdrop-blur border border-zinc-200 rounded-full p-2 text-zinc-500 hover:bg-zinc-100 transition-colors shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-              <button onClick={handleSave} className="bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary-dark transition-colors">
-                <CheckIcon className="w-5 h-5" />
-              </button>
-            </div>
-          ) : (
-            <div className="absolute top-6 right-6 z-50 flex items-center gap-2">
-              <button onClick={() => setIsEditing(true)} className="bg-white/80 backdrop-blur border border-zinc-200 rounded-full p-2 text-zinc-500 hover:bg-zinc-100 transition-colors shadow-sm" title="Edit">
-                <PencilIcon className="w-4 h-4" />
-              </button>
-              <button onClick={handleShare} className="bg-white/80 backdrop-blur border border-zinc-200 rounded-full p-2 text-zinc-500 hover:bg-zinc-100 transition-colors shadow-sm" title="Share">
-                <ShareIcon className="w-4 h-4" />
-              </button>
-              <button onClick={onClose} className="bg-white/80 backdrop-blur border border-zinc-200 rounded-full p-2 text-zinc-500 hover:bg-zinc-100 transition-colors shadow-sm" title="Close">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
-          )}
+          <div className="absolute top-6 right-6 z-50 flex items-center gap-2">
+            {isEditing ? (
+              <>
+                <button onClick={() => setIsEditing(false)} className="bg-white/80 backdrop-blur border border-zinc-200 rounded-full p-2 text-zinc-500 hover:bg-zinc-100 transition-colors shadow-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+                <button onClick={handleSave} className="bg-primary text-white rounded-full p-2 shadow-md hover:bg-primary-dark transition-colors">
+                  <CheckIcon className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <>
+                {/* 3-dot menu */}
+                <div className="relative" ref={menuRef}>
+                  <button
+                    onClick={() => setIsMenuOpen(prev => !prev)}
+                    className="bg-white/80 backdrop-blur border border-zinc-200 rounded-full p-2 text-zinc-500 hover:bg-zinc-100 transition-colors shadow-sm"
+                    title="More options"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+                    </svg>
+                  </button>
+                  {isMenuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-zinc-200 z-50 overflow-hidden py-1">
+                      <button onClick={() => { handleShare({ stopPropagation: () => {} } as any); setIsMenuOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-primary flex items-center gap-3 transition-colors">
+                        <ShareIcon className="w-4 h-4 text-zinc-400" /> Share
+                      </button>
+                      <button onClick={() => { setIsEditing(true); setIsMenuOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-primary flex items-center gap-3 transition-colors">
+                        <PencilIcon className="w-4 h-4 text-zinc-400" /> Edit
+                      </button>
+                      <a href={editableCard.url} target="_blank" rel="noopener noreferrer"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-primary flex items-center gap-3 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-zinc-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                        Visit Source
+                      </a>
+                      <div className="border-t border-zinc-100 my-1" />
+                      <button onClick={() => { handleDelete(); setIsMenuOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 flex items-center gap-3 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Close */}
+                <button onClick={onClose} className="bg-white/80 backdrop-blur border border-zinc-200 rounded-full p-2 text-zinc-500 hover:bg-zinc-100 transition-colors shadow-sm" title="Close">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+              </>
+            )}
+          </div>
 
           {/* Two-column layout */}
           <div className="flex flex-col md:flex-row gap-8">
@@ -671,21 +718,14 @@ export const CardModal: React.FC<CardModalProps> = ({ card, onClose, onUpdate, o
             </div>
           )}
 
-          {/* Footer */}
-          <div className="mt-8 pt-5 border-t border-zinc-100 flex items-center justify-between">
-            <a
-              href={editableCard.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-primary hover:text-primary-dark font-semibold text-sm transition-colors group"
-            >
-              Open Original Link
-              <svg className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></svg>
-            </a>
-            <span className="font-['Space_Grotesk'] text-[10px] text-zinc-400 uppercase tracking-widest">
-              {editableCard.intent?.replace('_', ' ')}
-            </span>
-          </div>
+          {/* Intent label */}
+          {editableCard.intent && (
+            <div className="mt-6 flex justify-end">
+              <span className="font-['Space_Grotesk'] text-[10px] text-zinc-400 uppercase tracking-widest">
+                {editableCard.intent.replace('_', ' ')}
+              </span>
+            </div>
+          )}
 
         </div>
       </div>
