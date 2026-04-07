@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
-import { LinkInputForm } from './components/LinkInputForm';
 import { CardGrid } from './components/CardGrid';
 import { processLink, parseSearchQuery, getCards, addCard, updateCard, deleteCard } from './services/dataService';
 import type { CardData, SearchFilters, CardType, User, GroupByOption } from './types';
@@ -11,6 +10,7 @@ import { ProfileModal } from './components/ProfileModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { Toast } from './components/Toast';
 import type { ToastType } from './components/Toast';
+import { AddLinkModal } from './components/AddLinkModal';
 
 const CARDS_PER_PAGE = 8;
 
@@ -345,20 +345,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Add Link inline panel */}
-        {isAddLinkOpen && (
-          <div className="mb-8 p-5 bg-zinc-50 border border-zinc-200 rounded-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-zinc-800 font-['Space_Grotesk']">Dump a new link</h3>
-              <button onClick={() => setIsAddLinkOpen(false)} className="text-zinc-400 hover:text-zinc-700 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <LinkInputForm onSubmit={handleAddLink} isLoading={isLoading} />
-          </div>
-        )}
 
         {/* Card Grid with filter chips */}
         <CardGrid
@@ -378,6 +364,14 @@ const App: React.FC = () => {
           onToggleFavorites={handleToggleFavorites}
         />
       </main>
+
+      {isAddLinkOpen && (
+        <AddLinkModal
+          onSubmit={handleAddLink}
+          onClose={() => setIsAddLinkOpen(false)}
+          isLoading={isLoading}
+        />
+      )}
 
       <Toast message={toast.message} type={toast.type} isVisible={toast.isVisible} onClose={closeToast} />
 
