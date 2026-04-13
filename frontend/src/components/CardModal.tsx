@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { CardData, ShoppingDetails, RecipeDetails, TravelDetails, RestaurantDetails, ReadLaterDetails, HealthFitnessDetails, EducationDetails, DiyCraftsDetails, ParentingDetails, FinanceDetails } from '../types';
 import { CardType } from '../types';
-import { Tag } from './common/Tag';
 import {
   ShoppingIcon,
   RecipeIcon,
@@ -178,7 +177,7 @@ const TravelDetailsDisplay: React.FC<{ details: TravelDetails }> = ({ details })
         <div><p className="text-sm text-zinc-700 group-hover:text-primary transition-colors">{details.address}</p>
           <p className="text-xs text-cyan-500 font-medium mt-0.5">Open in Maps →</p></div>
       </a>
-      {details.openingHours?.length > 0 && (
+      {details.openingHours && details.openingHours.length > 0 && (
         <div className="flex items-start gap-3">
           <div className="bg-white border border-zinc-200 p-2 rounded-xl"><ClockIcon className="w-4 h-4 text-zinc-400" /></div>
           <div className="text-xs text-zinc-600 space-y-0.5">{details.openingHours.map((h, i) => <div key={i}>{h}</div>)}</div>
@@ -199,7 +198,7 @@ const RestaurantDetailsDisplay: React.FC<{ details: RestaurantDetails }> = ({ de
         </div>
         {details.rating && <div className="flex items-center gap-1 bg-white px-2.5 py-1 rounded-full border border-zinc-200"><span className="text-yellow-400 text-xs">★</span><span className="text-zinc-800 font-bold text-sm">{details.rating}</span></div>}
       </div>
-      {details.cuisine?.length > 0 && (
+      {details.cuisine && details.cuisine.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           <UtensilsIcon className="w-3.5 h-3.5 text-zinc-400" />
           {details.cuisine.map(c => <span key={c} className="text-xs text-zinc-600 bg-white px-2 py-0.5 rounded-full border border-zinc-200">{c}</span>)}
@@ -212,7 +211,7 @@ const RestaurantDetailsDisplay: React.FC<{ details: RestaurantDetails }> = ({ de
         <div><p className="text-sm text-zinc-700 group-hover:text-primary transition-colors">{details.address}</p>
           <p className="text-xs text-orange-400 font-medium mt-0.5">Open in Maps →</p></div>
       </a>
-      {details.openingHours?.length > 0 && (
+      {details.openingHours && details.openingHours.length > 0 && (
         <div className="flex items-start gap-3">
           <div className="bg-white border border-zinc-200 p-2 rounded-xl"><ClockIcon className="w-4 h-4 text-zinc-400" /></div>
           <div className="text-xs text-zinc-600 space-y-0.5">{details.openingHours.map((h, i) => <div key={i}>{h}</div>)}</div>
@@ -234,7 +233,7 @@ const HealthDetailsDisplay: React.FC<{ details: HealthFitnessDetails }> = ({ det
       {details.duration && <span className="px-3 py-1 bg-white text-zinc-600 rounded-full text-xs border border-zinc-200 flex items-center gap-1"><ClockIcon className="w-3 h-3" />{details.duration}</span>}
       {details.difficulty && <span className="px-3 py-1 bg-white text-zinc-600 rounded-full text-xs border border-zinc-200">{details.difficulty}</span>}
     </div>
-    {details.equipmentNeeded?.length > 0 && (
+    {details.equipmentNeeded && details.equipmentNeeded.length > 0 && (
       <div><p className="text-[10px] text-zinc-400 uppercase font-bold mb-2">Equipment</p>
         <div className="flex flex-wrap gap-2">{details.equipmentNeeded.map(eq => <span key={eq} className="text-xs bg-white px-2 py-1 rounded-full border border-zinc-200 text-zinc-600">{eq}</span>)}</div>
       </div>
@@ -264,7 +263,7 @@ const DiyDetailsDisplay: React.FC<{ details: DiyCraftsDetails }> = ({ details })
       {details.projectType && <span className="font-bold text-amber-600">{details.projectType}</span>}
       {details.estimatedTime && <span className="text-zinc-500 text-sm">• {details.estimatedTime}</span>}
     </div>
-    {details.materials?.length > 0 && (
+    {details.materials && details.materials.length > 0 && (
       <div><p className="text-[10px] text-zinc-400 uppercase font-bold mb-2">Materials</p>
         <ul className="list-disc list-inside text-zinc-600 text-xs space-y-1">{details.materials.map((m, i) => <li key={i}>{m}</li>)}</ul>
       </div>
@@ -278,7 +277,7 @@ const ParentingDetailsDisplay: React.FC<{ details: ParentingDetails }> = ({ deta
       {details.activityType && <span className="font-bold text-pink-600">{details.activityType}</span>}
       {details.ageGroup && <span className="px-2 py-0.5 bg-pink-50 text-pink-600 rounded-full text-xs border border-pink-200">{details.ageGroup}</span>}
     </div>
-    {details.itemsNeeded?.length > 0 && <p className="text-xs text-zinc-500">Needs: {details.itemsNeeded.join(', ')}</p>}
+    {details.itemsNeeded && details.itemsNeeded.length > 0 && <p className="text-xs text-zinc-500">Needs: {details.itemsNeeded.join(', ')}</p>}
   </div>
 );
 
@@ -339,13 +338,7 @@ export const CardModal: React.FC<CardModalProps> = ({ card, onClose, onUpdate, o
     setEditableCard(prev => ({ ...prev, userNote: e.target.value }));
   };
 
-  const handleNoteBlur = () => {
-    if (!isEditing && editableCard.userNote !== card.userNote) {
-      onUpdate({ ...card, userNote: editableCard.userNote });
-    }
-  };
-
-  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const [detailType, field] = name.split('.');
     const finalValue: any = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
