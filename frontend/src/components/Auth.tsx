@@ -6,13 +6,15 @@ import * as authService from '../services/authService';
 interface AuthProps {
   onLogin: (user: User) => void;
   onRegister: (user: User) => void;
+  initialMode?: 'login' | 'register';
+  initialEmail?: string;
 }
 
 type AuthMode = 'login' | 'register';
 
-export const Auth: React.FC<AuthProps> = ({ onLogin, onRegister }) => {
-  const [mode, setMode] = useState<AuthMode>('login');
-  const [email, setEmail] = useState('');
+export const Auth: React.FC<AuthProps> = ({ onLogin, onRegister, initialMode = 'login', initialEmail = '' }) => {
+  const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -61,10 +63,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onRegister }) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-center text-white mb-1">
+      <h2 className="text-2xl font-headline font-bold text-center text-zinc-900 mb-1">
         {mode === 'login' ? 'Welcome Back' : 'Create Your Account'}
       </h2>
-      <p className="text-center text-gray-400 mb-6">
+      <p className="text-center text-zinc-500 mb-6 font-body">
         {mode === 'login' ? 'Sign in to access your links' : 'Get started for free'}
       </p>
 
@@ -73,7 +75,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onRegister }) => {
         type="button"
         onClick={() => googleLogin()}
         disabled={isLoading}
-        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-zinc-700 font-medium rounded-full border border-zinc-200 hover:bg-zinc-50 transition-colors disabled:opacity-50 mb-4 font-body shadow-sm"
       >
         <svg width="18" height="18" viewBox="0 0 18 18">
           <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
@@ -85,14 +87,14 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onRegister }) => {
       </button>
 
       <div className="flex items-center gap-3 mb-4">
-        <hr className="flex-1 border-gray-700" />
-        <span className="text-gray-500 text-sm">or</span>
-        <hr className="flex-1 border-gray-700" />
+        <hr className="flex-1 border-zinc-200" />
+        <span className="text-zinc-400 text-sm font-body">or</span>
+        <hr className="flex-1 border-zinc-200" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="text-sm font-medium text-gray-300">Email</label>
+          <label htmlFor="email" className="text-sm font-medium text-zinc-700 font-body">Email</label>
           <input
             id="email"
             type="email"
@@ -100,12 +102,12 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onRegister }) => {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={isLoading}
-            className="w-full mt-1 px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 disabled:opacity-50 text-white placeholder-gray-500"
+            className="w-full mt-1 px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5D4AC5]/20 focus:border-[#5D4AC5] disabled:opacity-50 text-zinc-900 placeholder-zinc-400 font-body"
             placeholder="you@example.com"
           />
         </div>
         <div>
-          <label htmlFor="password" className="text-sm font-medium text-gray-300">Password</label>
+          <label htmlFor="password" className="text-sm font-medium text-zinc-700 font-body">Password</label>
           <input
             id="password"
             type="password"
@@ -114,23 +116,23 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onRegister }) => {
             required
             minLength={6}
             disabled={isLoading}
-            className="w-full mt-1 px-4 py-2 bg-gray-900/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-primary-400 disabled:opacity-50 text-white placeholder-gray-500"
+            className="w-full mt-1 px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5D4AC5]/20 focus:border-[#5D4AC5] disabled:opacity-50 text-zinc-900 placeholder-zinc-400 font-body"
             placeholder="••••••••"
           />
         </div>
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-sm text-center font-body">{error}</p>}
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg shadow-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ring-offset-gray-800 transition-all duration-200 disabled:bg-gray-500"
+          className="w-full px-6 py-3 bg-[#5D4AC5] text-white font-headline font-bold rounded-full shadow-lg shadow-[#5D4AC5]/20 hover:scale-[1.02] active:scale-95 transition-all duration-200 disabled:opacity-50"
         >
           {isLoading ? 'Processing...' : mode === 'login' ? 'Login' : 'Create Account'}
         </button>
       </form>
 
-      <div className="mt-6 text-center">
-        <button onClick={toggleMode} className="text-sm text-primary-400 hover:underline" disabled={isLoading}>
-          {mode === 'login' ? 'Need an account? Register' : 'Already have an account? Login'}
+      <div className="mt-5 text-center">
+        <button onClick={toggleMode} className="text-sm text-[#5D4AC5] hover:underline font-body" disabled={isLoading}>
+          {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Login'}
         </button>
       </div>
     </div>
